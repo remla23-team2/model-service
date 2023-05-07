@@ -13,8 +13,6 @@ RUN pip install -r requirements.txt
 # Copy the application code to the container
 COPY app.py /root/
 
-# Download the models and save them to the models folder
-
 # Set the entrypoint and default command for the container
 ENTRYPOINT ["python"]
 CMD ["app.py"]
