@@ -1,34 +1,16 @@
 from flask import Flask, request, jsonify
 from flasgger import Swagger
-import joblib
-from sklearn.feature_extraction.text import CountVectorizer
-import pickle
-from flask_cors import CORS
-import requests
-import io
 
-import re
-import nltk
-nltk.download('stopwords')
 from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-ps = PorterStemmer()
-# from src.preprocessing import pre_process
+from src.preprocessing import process_review
 
 app = Flask(__name__)
 swagger = Swagger(app)
-CORS(app)
-
-# Load the trained model
-cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', "rb"))
-
-# Load the Classifier Sentiment Model
-classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
 @app.route('/predict', methods=['POST'])
 def predict():
     """
-    Make a hardcoded prediction
+    Predict whether a given SMS is Spam or Ham (dumb model: always predicts 'ham').
     ---
     consumes:
       - application/json
@@ -41,20 +23,21 @@ def predict():
             type: object
             required: sms
             properties:
-                msg:
+                review:
                     type: string
-                    example: This is an example msg.
+                    example: This is an example of an SMS.
     responses:
       200:
-        description: Some result
+        description: "The result of the classification: 'spam' or 'ham'."
     """
+    input_data = request.get_json()
+    review = input_data.get('review')
+    review = process_review(review)
     
-    res = {
-      "review": "this is a positive or negative review"
-    }
-    
-    return jsonify(res)
+    return jsonify({
+        "result": "Positive",
+        "review": review
+    })
    
-
 app.run(host="0.0.0.0", port=8080, debug=True)
 
