@@ -12,8 +12,6 @@ RUN pip install -r requirements.txt
 
 # Copy the application code to the container
 COPY app.py .
-COPY src src
-COPY data data
 
 EXPOSE 8080
 
