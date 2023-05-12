@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flasgger import Swagger
 
 from nltk.corpus import stopwords
-from src.preprocessing import process_review
+# from src.preprocessing import process_review
 
 app = Flask(__name__)
 swagger = Swagger(app)
@@ -32,7 +32,6 @@ def predict():
     """
     input_data = request.get_json()
     review = input_data.get('review')
-    review = process_review(review)
     
     return jsonify({
         "result": "Positive",
