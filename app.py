@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flasgger import Swagger
 import joblib
 from sklearn.feature_extraction.text import CountVectorizer
@@ -13,7 +13,7 @@ nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 ps = PorterStemmer()
-from src.preprocessing import pre_process
+# from src.preprocessing import pre_process
 
 app = Flask(__name__)
 swagger = Swagger(app)
@@ -48,13 +48,12 @@ def predict():
       200:
         description: Some result
     """
-    msg = request.get_json().get('msg')
-    preprocessed_msg = pre_process(msg)
-    prediction = classifier.predict([preprocessed_msg])
     
-    return {
-    "review": "this is a positive or negative review" #talk to the group
-}
+    res = {
+      "review": "this is a positive or negative review"
+    }
+    
+    return jsonify(res)
    
 
 app.run(host="0.0.0.0", port=8080, debug=True)
