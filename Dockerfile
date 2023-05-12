@@ -10,9 +10,6 @@ COPY requirements.txt /root/
 # Install the Python dependencies
 RUN pip install -r requirements.txt
 
-# Copy the pre-processing function
-COPY preprocessing.py /root/
-
 # Copy the application code to the container
 COPY app.py /root/
 
