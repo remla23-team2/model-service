@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify
 from flasgger import Swagger
+from flask_cors import CORS
 
+import nltk
+nltk.download('stopwords')
 from nltk.corpus import stopwords
-# from src.preprocessing import process_review
+from src.preprocessing import process_review
 
 app = Flask(__name__)
+CORS(app)
 swagger = Swagger(app)
 
 @app.route('/predict', methods=['POST'])
@@ -32,10 +36,11 @@ def predict():
     """
     input_data = request.get_json()
     review = input_data.get('review')
+    processed_review = process_review(review)
     
     return jsonify({
         "result": "Positive",
-        "review": review
+        "review": processed_review
     })
    
 app.run(host="0.0.0.0", port=8080, debug=True)

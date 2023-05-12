@@ -5,13 +5,15 @@ FROM python:3.9
 WORKDIR /root/
 
 # Copy the requirements file to the container
-COPY requirements.txt /root/
+COPY requirements.txt .
 
 # Install the Python dependencies
 RUN pip install -r requirements.txt
 
 # Copy the application code to the container
-COPY app.py /root/
+COPY app.py .
+COPY src src
+COPY data data
 
 EXPOSE 8080
 
