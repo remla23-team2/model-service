@@ -13,20 +13,19 @@ nltk.download('stopwords')
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 ps = PorterStemmer()
-from preprocessing import pre_processing
+from src.preprocessing import pre_process
 
 app = Flask(__name__)
 swagger = Swagger(app)
 CORS(app)
 
 # Load the trained model
-cv = pickle.load(open('models/c1_BoW_Sentiment_Model.pkl', "rb"))
+cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', "rb"))
 
 # Load the Classifier Sentiment Model
-classifier = joblib.load('models/c2_Classifier_Sentiment_Model')
- 
+classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
-@app.route('/', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     """
     Make a hardcoded prediction
@@ -50,7 +49,7 @@ def predict():
         description: Some result
     """
     msg = request.get_json().get('msg')
-    preprocessed_msg = pre_processing(msg)
+    preprocessed_msg = pre_process(msg)
     prediction = classifier.predict([preprocessed_msg])
     
     return {
