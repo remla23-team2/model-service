@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify
 from flasgger import Swagger
 from flask_cors import CORS
 
+import pickle
+import joblib
+
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
@@ -10,6 +13,9 @@ from src.preprocessing import process_review
 app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
+
+cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
+classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -38,8 +44,12 @@ def predict():
     review = input_data.get('review')
     processed_review = process_review(review)
     
+    X = cv.transform([processed_review]).toarray()
+    result = int(classifier.predict(X)[0])
+    result = 'Positive' if result == 1 else 'Negative'
+    
     return jsonify({
-        "result": "Positive",
+        "result": result,
         "review": processed_review
     })
    
