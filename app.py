@@ -19,33 +19,14 @@ swagger = Swagger(app)
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
-countIdx = 0
-countSub = 0
-
-@app.route('/', methods=['GET'])
-def index():
-    global countIdx
-    countIdx += 1
-    return "<html><body><h1>Index</h1><p>You are visitor {}!</p><a href=\"./sub\">Goto Sub</a></body></html>".format(countIdx)
-
-@app.route('/sub', methods=['GET'])
-def sub():
-    global countSub
-    countSub += 1
-    return "<html><body><h1>Sub</h1><p>This is not the main page anymore. Welcome sub-visitor {}!</p><a href=\"./\">Back to Index</a></body></html>".format(countSub)
+count_predict = 0
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    global countIdx, countSub
+    global count_predict
 
-    m = "# HELP my_random This is just a random 'gauge' for illustration.\n"
-    m+= "# TYPE my_random gauge\n"
-    m+= "my_random " + str(random()) + "\n\n"
-
-    m+= "# HELP num_requests The number of requests that have been served, by page.\n"
-    m+= "# TYPE num_requests counter\n"
-    m+= "num_requests{{page=\"index\"}} {}\n".format(countIdx)
-    m+= "num_requests{{page=\"sub\"}} {}\n".format(countSub)
+    m = "# Monitering the webapp.\n"
+    m+= "num_requests{{page=\"index\"}} {}\n".format(count_predict)
 
     return Response(m, mimetype="text/plain")
 
@@ -72,6 +53,8 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
+    global count_predict
+    count_predict += 1
     input_data = request.get_json()
     review = input_data.get('review')
     processed_review = process_review(review)
