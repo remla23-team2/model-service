@@ -20,13 +20,32 @@ cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
 count_predict = 0
+averages = []
+buffer_predict = []
+
+
+def split_and_average(l, chunk_size):
+    """
+    l: the list of feedbacks, 1 for positive, 0 for negative
+    chunk_size: the number of feedbacks to average
+    """
+    chunks = [l[i:i+chunk_size] for i in range(0, len(l), chunk_size)]
+    # if len(chunks[-1]) != chunk_size:
+        # last_chunk = chunks.pop()
+    # chunks += last_chunk
+    averages = [sum(chunk)/len(chunk) for chunk in chunks]
+    return averages
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    global count_predict
+    global count_predict, averages, buffer_predict
 
-    m = "# Monitering the webapp.\n"
-    m+= "num_requests{{page=\"index\"}} {}\n".format(count_predict)
+    m = "Monitering the webapp:\n"
+    m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
+    m+= "2. Model Accuracy (Gauge): " + "\n"  # not finished yet
+    m+= "3. The trend on changing average favorable rates for each month (Histogram): " + str(averages) + str(buffer_predict) + "\n"
+    m+= "Feedback list (only for debugging):" + str(buffer_predict) + "\n"
+    m+= "4. How does our restaurant perform in the previous months (Summary): "
 
     return Response(m, mimetype="text/plain")
 
@@ -53,7 +72,8 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
-    global count_predict
+    global count_predict, averages, buffer_predict
+
     count_predict += 1
     input_data = request.get_json()
     review = input_data.get('review')
@@ -61,6 +81,11 @@ def predict():
     
     X = cv.transform([processed_review]).toarray()
     result = int(classifier.predict(X)[0])
+    if len(buffer_predict) > 50:
+        buffer_predict.pop(0)
+    buffer_predict.append(result)
+    averages = split_and_average(buffer_predict, 5)
+    
     result = 'Positive' if result == 1 else 'Negative'
     
     return jsonify({
