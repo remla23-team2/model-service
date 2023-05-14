@@ -22,6 +22,7 @@ classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 count_predict = 0
 averages = []
 buffer_predict = []
+buffer_label = []
 
 
 def split_and_average(l, chunk_size):
@@ -36,15 +37,22 @@ def split_and_average(l, chunk_size):
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    global count_predict, averages, buffer_predict
+    global count_predict, averages, buffer_predict, buffer_label
+    
+    if len(buffer_label) == 0:
+        model_accuracy = 0
+    else:
+        model_accuracy = round(sum(buffer_label)/len(buffer_label), 2)
 
     m = "Monitering the webapp:\n"
     m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
-    m+= "2. Model Accuracy (Gauge): " + "\n"  # not finished yet
+    m+= "2. Model Accuracy (Gauge): {}".format(model_accuracy) + "\n"  # not finished yet
     m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
     for i, avg in enumerate(averages):
         m += f"Recent Feedback{i*5+1}-{i*5+5}: {round(avg, 2)}\n"
-    m+= "Feedback list (only for debugging):" + str(buffer_predict) + "\n"
+    m+= "Feedback list (only for debugging):" + "\n"
+    m+= "      predictions:          " + str(buffer_predict) + "\n"
+    m+= "      Predictions Correct?: " + str(buffer_label) + "\n"
     m+= "4. How does our restaurant perform in the previous months (Summary): "
 
     return Response(m, mimetype="text/plain")
@@ -72,7 +80,7 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
-    global count_predict, averages, buffer_predict
+    global count_predict, averages, buffer_predict, buffer_label
 
     count_predict += 1
     input_data = request.get_json()
@@ -85,8 +93,15 @@ def predict():
         buffer_predict.pop(0)
     buffer_predict.append(result)
     averages = split_and_average(list(reversed(buffer_predict)), 5)
-    
+
+    # Attach the ground truth to another list to compute the success rate.
+    label = input_data.get('ground_truth')
+    # print(f"review: {review}, ground_truth: {label}", flush=True)    
     result = 'Positive' if result == 1 else 'Negative'
+    if label == result:
+        buffer_label.append(1)
+    else:
+        buffer_label.append(0)
     
     return jsonify({
         "result": result,
