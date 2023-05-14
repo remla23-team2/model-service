@@ -41,7 +41,6 @@ def metrics():
     m = "Monitering the webapp:\n"
     m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
     m+= "2. Model Accuracy (Gauge): " + "\n"  # not finished yet
-    # m+= "3. The trend on changing average favorable rates for each month (Histogram): " + str(averages) + "\n"
     m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
     for i, avg in enumerate(averages):
         m += f"Recent Feedback{i*5}-{i*5+4}: {round(avg, 2)}\n"
