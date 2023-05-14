@@ -43,7 +43,7 @@ def metrics():
     m+= "2. Model Accuracy (Gauge): " + "\n"  # not finished yet
     m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
     for i, avg in enumerate(averages):
-        m += f"Recent Feedback{i*5}-{i*5+4}: {round(avg, 2)}\n"
+        m += f"Recent Feedback{i*5+1}-{i*5+5}: {round(avg, 2)}\n"
     m+= "Feedback list (only for debugging):" + str(buffer_predict) + "\n"
     m+= "4. How does our restaurant perform in the previous months (Summary): "
 
@@ -81,7 +81,7 @@ def predict():
     
     X = cv.transform([processed_review]).toarray()
     result = int(classifier.predict(X)[0])
-    if len(buffer_predict) > 50:
+    if len(buffer_predict) >= 50:
         buffer_predict.pop(0)
     buffer_predict.append(result)
     averages = split_and_average(list(reversed(buffer_predict)), 5)
