@@ -26,13 +26,11 @@ buffer_predict = []
 
 def split_and_average(l, chunk_size):
     """
+    This function was helped with ChatGPT initially, but has been modified to fit our needs.
     l: the list of feedbacks, 1 for positive, 0 for negative
     chunk_size: the number of feedbacks to average
     """
     chunks = [l[i:i+chunk_size] for i in range(0, len(l), chunk_size)]
-    # if len(chunks[-1]) != chunk_size:
-        # last_chunk = chunks.pop()
-    # chunks += last_chunk
     averages = [sum(chunk)/len(chunk) for chunk in chunks]
     return averages
 
@@ -43,7 +41,10 @@ def metrics():
     m = "Monitering the webapp:\n"
     m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
     m+= "2. Model Accuracy (Gauge): " + "\n"  # not finished yet
-    m+= "3. The trend on changing average favorable rates for each month (Histogram): " + str(averages) + str(buffer_predict) + "\n"
+    # m+= "3. The trend on changing average favorable rates for each month (Histogram): " + str(averages) + "\n"
+    m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
+    for i, avg in enumerate(averages):
+        m += f"Recent Feedback{i*5}-{i*5+4}: {round(avg, 2)}\n"
     m+= "Feedback list (only for debugging):" + str(buffer_predict) + "\n"
     m+= "4. How does our restaurant perform in the previous months (Summary): "
 
@@ -84,7 +85,7 @@ def predict():
     if len(buffer_predict) > 50:
         buffer_predict.pop(0)
     buffer_predict.append(result)
-    averages = split_and_average(buffer_predict, 5)
+    averages = split_and_average(list(reversed(buffer_predict)), 5)
     
     result = 'Positive' if result == 1 else 'Negative'
     
