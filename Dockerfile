@@ -16,8 +16,8 @@ RUN apt-get update && \
     git clone https://github.com/remla23-team2/model-training.git /root/model-training
 
 # Copy the contents from the model-training repository
-RUN cp /root/model-training/src /root/src && \
-    cp /root/model-training/data /root/data
+RUN cp -r /root/model-training/src /root/src && \
+    cp -r /root/model-training/data /root/data
 
 # Copy the application code to the container
 COPY app.py .
