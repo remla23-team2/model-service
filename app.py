@@ -38,11 +38,13 @@ def split_and_average(l, chunk_size):
 @app.route('/metrics', methods=['GET'])
 def metrics():
     global count_predict, averages, buffer_predict, buffer_label
+    assert len(buffer_predict) == len(buffer_label)
     
+    num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
     if len(buffer_label) == 0:
         model_accuracy = 0
     else:
-        model_accuracy = round(sum(buffer_label)/len(buffer_label), 2)
+        model_accuracy = round(num_correct/len(buffer_label), 2)
 
     m = "Monitering the webapp:\n"
     m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
@@ -51,8 +53,8 @@ def metrics():
     for i, avg in enumerate(averages):
         m += f"Recent Feedback{i*5+1}-{i*5+5}: {round(avg, 2)}\n"
     m+= "Feedback list (only for debugging):" + "\n"
-    m+= "      predictions:          " + str(buffer_predict) + "\n"
-    m+= "      Predictions Correct?: " + str(buffer_label) + "\n"
+    m+= "      Predictions: " + str(buffer_predict) + "\n"
+    m+= "      Labels:      " + str(buffer_label) + "\n"
     m+= "4. How does our restaurant perform in the previous months (Summary): "
 
     return Response(m, mimetype="text/plain")
@@ -96,13 +98,10 @@ def predict():
 
     # Attach the ground truth to another list to compute the success rate.
     label = input_data.get('ground_truth')
-    # print(f"review: {review}, ground_truth: {label}", flush=True)    
-    result = 'Positive' if result == 1 else 'Negative'
-    if label == result:
-        buffer_label.append(1)
-    else:
-        buffer_label.append(0)
+    buffer_label.append(1 if label == 'Positive' else 0)
     
+    result = 'Positive' if result == 1 else 'Negative'
+
     return jsonify({
         "result": result,
         "review": processed_review
