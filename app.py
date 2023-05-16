@@ -17,7 +17,7 @@ swagger = Swagger(app)
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
-@app.route('/predict', methods=['POST'])
+@app.route('/', methods=['POST'])
 def predict():
     """
     Predict whether a given SMS is Spam or Ham (dumb model: always predicts 'ham').
