@@ -1,6 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flasgger import Swagger
 from flask_cors import CORS
+
+import prometheus_client
+from prometheus_client import Counter, Histogram, Summary
+# from prometheus_flask_exporter import PrometheusMetrics
 
 import pickle
 import joblib
@@ -9,15 +13,44 @@ import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 from src.preprocessing import process_review
+from random import random
+
 
 app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
 
+# metrics = PrometheusMetrics(app)
+
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
-@app.route('/', methods=['POST'])
+count_predict = 0
+averages = []
+buffer_predict = []
+buffer_label = []
+
+predict_counter = Counter('predictions_counter', 'The total number of model predictions')
+
+def split_and_average(l, chunk_size):
+    """
+    This function was helped with ChatGPT initially, but has been modified to fit our needs.
+    l: the list of feedbacks, 1 for positive, 0 for negative
+    chunk_size: the number of feedbacks to average
+    """
+    chunks = [l[i:i+chunk_size] for i in range(0, len(l), chunk_size)]
+    averages = [sum(chunk)/len(chunk) for chunk in chunks]
+    return averages
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+
+    registry = prometheus_client.CollectorRegistry()
+    registry.register(predict_counter)
+
+    return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
+
+@app.route('/predict', methods=['POST'])
 def predict():
     """
     Predict whether a given SMS is Spam or Ham (dumb model: always predicts 'ham').
@@ -40,14 +73,29 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
+    global count_predict, averages, buffer_predict, buffer_label
+
+    count_predict += 1
+    
+    predict_counter.inc()
+    
     input_data = request.get_json()
     review = input_data.get('review')
     processed_review = process_review(review)
     
     X = cv.transform([processed_review]).toarray()
     result = int(classifier.predict(X)[0])
-    result = 'Positive' if result == 1 else 'Negative'
+    if len(buffer_predict) >= 50:
+        buffer_predict.pop(0)
+    buffer_predict.append(result)
+    averages = split_and_average(list(reversed(buffer_predict)), 5)
+
+    # Attach the ground truth to another list to compute the success rate.
+    label = input_data.get('ground_truth')
+    buffer_label.append(1 if label == 'Positive' else 0)
     
+    result = 'Positive' if result == 1 else 'Negative'
+
     return jsonify({
         "result": result,
         "review": processed_review
