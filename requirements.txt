@@ -1,4 +1,6 @@
 # requirements.txt
+prometheus_client
+prometheus_flask_exporter
 Flask==2.2.4
 flasgger==0.9.4
 joblib
