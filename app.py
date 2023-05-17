@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify, Response
 from flasgger import Swagger
 from flask_cors import CORS
 
+import prometheus_client
+from prometheus_client import Counter, Histogram, Summary
+from prometheus_flask_exporter import PrometheusMetrics
+
 import pickle
 import joblib
 
@@ -16,6 +20,8 @@ app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
 
+metrics = PrometheusMetrics(app)
+
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
 
@@ -24,6 +30,7 @@ averages = []
 buffer_predict = []
 buffer_label = []
 
+predict_counter = Counter('predictions_total', 'The total number of model predictions')
 
 def split_and_average(l, chunk_size):
     """
@@ -85,6 +92,9 @@ def predict():
     global count_predict, averages, buffer_predict, buffer_label
 
     count_predict += 1
+    
+    predict_counter.set(count_predict)
+    
     input_data = request.get_json()
     review = input_data.get('review')
     processed_review = process_review(review)

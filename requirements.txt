@@ -7,3 +7,5 @@ flask_cors
 nltk
 requests
 pandas
+prometheus_client
+prometheus_flask_exporter
