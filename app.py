@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, Response
 from flasgger import Swagger
 from flask_cors import CORS
+from prometheus_flask_exporter import PrometheusMetrics
 
 import pickle
 import joblib
@@ -10,11 +11,13 @@ nltk.download('stopwords')
 from nltk.corpus import stopwords
 from src.preprocessing import process_review
 from random import random
+from prometheus_client import Counter, Histogram, Summary
 
 
 app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
+metrics = PrometheusMetrics(app)
 
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
