@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 import prometheus_client
 from prometheus_client import Counter, Histogram, Summary
-from prometheus_flask_exporter import PrometheusMetrics
+# from prometheus_flask_exporter import PrometheusMetrics
 
 import pickle
 import joblib
@@ -20,7 +20,7 @@ app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
 
-metrics = PrometheusMetrics(app)
+# metrics = PrometheusMetrics(app)
 
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
@@ -42,29 +42,37 @@ def split_and_average(l, chunk_size):
     averages = [sum(chunk)/len(chunk) for chunk in chunks]
     return averages
 
+# @app.route('/metrics', methods=['GET'])
+# def metrics():
+#     global count_predict, averages, buffer_predict, buffer_label
+#     assert len(buffer_predict) == len(buffer_label)
+    
+#     num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
+#     if len(buffer_label) == 0:
+#         model_accuracy = 0
+#     else:
+#         model_accuracy = round(num_correct/len(buffer_label), 2)
+
+#     m = "Monitering the webapp:\n"
+#     m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
+#     m+= "2. Model Accuracy (Gauge): {}".format(model_accuracy) + "\n"  # not finished yet
+#     m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
+#     for i, avg in enumerate(averages):
+#         m += f"Recent Feedback{i*5+1}-{i*5+5}: {round(avg, 2)}\n"
+#     m+= "Feedback list (only for debugging):" + "\n"
+#     m+= "      Predictions: " + str(buffer_predict) + "\n"
+#     m+= "      Labels:      " + str(buffer_label) + "\n"
+#     m+= "4. How does our restaurant perform in the previous months (Summary): "
+
+#     return Response(m, mimetype="text/plain")
+
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    global count_predict, averages, buffer_predict, buffer_label
-    assert len(buffer_predict) == len(buffer_label)
-    
-    num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
-    if len(buffer_label) == 0:
-        model_accuracy = 0
-    else:
-        model_accuracy = round(num_correct/len(buffer_label), 2)
 
-    m = "Monitering the webapp:\n"
-    m+= "1. Number of feedbacks received (Counter): {}\n".format(count_predict)
-    m+= "2. Model Accuracy (Gauge): {}".format(model_accuracy) + "\n"  # not finished yet
-    m += "3. The trend on changing average favorable rates for every 5 Customers (Histogram):\n"
-    for i, avg in enumerate(averages):
-        m += f"Recent Feedback{i*5+1}-{i*5+5}: {round(avg, 2)}\n"
-    m+= "Feedback list (only for debugging):" + "\n"
-    m+= "      Predictions: " + str(buffer_predict) + "\n"
-    m+= "      Labels:      " + str(buffer_label) + "\n"
-    m+= "4. How does our restaurant perform in the previous months (Summary): "
+    registry = prometheus_client.CollectorRegistry()
+    registry.register(predict_counter)
 
-    return Response(m, mimetype="text/plain")
+    return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
 
 @app.route('/predict', methods=['POST'])
 def predict():
