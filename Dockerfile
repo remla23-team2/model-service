@@ -10,6 +10,15 @@ COPY requirements.txt .
 # Install the Python dependencies
 RUN pip install -r requirements.txt
 
+# Clone the model-training repository
+RUN apt-get update && \
+    apt-get install -y git && \
+    git clone https://github.com/remla23-team2/model-training.git /root/model-training
+
+# Copy the contents from the model-training repository
+RUN cp -r /root/model-training/src /root/src && \
+    cp -r /root/model-training/data /root/data
+
 # Copy the application code to the container
 COPY app.py .
 COPY data data
