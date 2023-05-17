@@ -30,7 +30,7 @@ averages = []
 buffer_predict = []
 buffer_label = []
 
-# predict_counter = Counter('predictions_total', 'The total number of model predictions')
+predict_counter = Counter('predictions_counter', 'The total number of model predictions')
 
 def split_and_average(l, chunk_size):
     """
