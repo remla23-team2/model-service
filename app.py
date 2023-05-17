@@ -20,7 +20,7 @@ app = Flask(__name__)
 CORS(app)
 swagger = Swagger(app)
 
-# metrics = PrometheusMetrics(app)
+metrics = PrometheusMetrics(app)
 
 cv = pickle.load(open('data/models/c1_BoW_Sentiment_Model.pkl', 'rb'))
 classifier = joblib.load('data/models/c2_Classifier_Sentiment_Model')
