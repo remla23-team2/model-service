@@ -93,7 +93,7 @@ def predict():
 
     count_predict += 1
     
-    # predict_counter.set(count_predict)
+    predict_counter.inc()
     
     input_data = request.get_json()
     review = input_data.get('review')
