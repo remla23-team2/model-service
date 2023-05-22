@@ -37,7 +37,7 @@ model_accuracy = Gauge('model_accuracy', 'Accuracy of the predictions')
 feedback_per_day = Histogram(
     'feedback_per_day', 
     'Feedback count for each day of the week', 
-    ['day'],
+    buckets=[0, 1, 2, 3, 4, 5, 6, 7]
 )
 
 def split_and_average(l, chunk_size):
@@ -103,7 +103,8 @@ def predict():
     buffer_predict.append(result)
 
     weekday = round(time.time()) % 7  # simulate a different weekday with each request
-    feedback_per_day.labels(day=weekday).observe(1)  # observe a feedback for the simulated day
+    # feedback_counts[weekday] += 1
+    feedback_per_day.observe(weekday)
 
     # Attach the ground truth to another list to compute the success rate.
     label = input_data.get('ground_truth')
