@@ -3,7 +3,7 @@ from flasgger import Swagger
 from flask_cors import CORS
 
 import prometheus_client
-from prometheus_client import Counter, Histogram, Summary
+from prometheus_client import Counter, Gauge, Histogram, Summary
 # from prometheus_flask_exporter import PrometheusMetrics
 
 import pickle
@@ -31,6 +31,11 @@ buffer_predict = []
 buffer_label = []
 
 predict_counter = Counter('predictions_counter', 'The total number of model predictions')
+model_accuracy = Gauge('model_accuracy', 'Accuracy of the predictions')
+input_data_size_distribution = Histogram(
+    'feedback_trend', 'How the feedbacks change when time flies', 
+    buckets=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+)
 
 def split_and_average(l, chunk_size):
     """
@@ -45,8 +50,13 @@ def split_and_average(l, chunk_size):
 @app.route('/metrics', methods=['GET'])
 def metrics():
 
+    num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
+    accuracy = round(num_correct/len(buffer_label), 2)
+    model_accuracy.set(accuracy)
+
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
+    registry.register(model_accuracy)
 
     return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
 
