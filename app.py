@@ -29,13 +29,15 @@ count_predict = 0
 averages = []
 buffer_predict = []
 buffer_label = []
+feedback_counts = [0, 0, 0, 0, 0, 0, 0]
 
 predict_counter = Counter('predictions_counter', 'The total number of model predictions')
 model_accuracy = Gauge('model_accuracy', 'Accuracy of the predictions')
-feedback_trend = Histogram(
-    'feedback_trend', 'How the feedbacks change when time flies', 
-    buckets=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-    labelnames=['bin']
+feedback_per_day = Histogram(
+    'feedback_per_day', 
+    'Feedback count for each day of the week', 
+    buckets=[0, 1, 2, 3, 4, 5, 6, 7],
+    labelnames=['weekday']
 )
 
 def split_and_average(l, chunk_size):
@@ -57,7 +59,7 @@ def metrics():
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
     registry.register(model_accuracy)
-    registry.register(feedback_trend)
+    registry.register(feedback_per_day)
 
     return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
 
@@ -84,7 +86,7 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
-    global count_predict, averages, buffer_predict, buffer_label
+    global count_predict, averages, buffer_predict, buffer_label, feedback_counts
 
     count_predict += 1
     
@@ -100,14 +102,9 @@ def predict():
         buffer_predict.pop(0)
     buffer_predict.append(result)
 
-    if len(buffer_predict) % 5 == 0: # we compute the average every 5 predictions
-        averages = split_and_average(list(reversed(buffer_predict)), 5)
-        if len(averages) >= 10:
-            averages.pop(0)
-        while len(averages) < 10: # fill in the remaining spots with 0's
-            averages.append(0)
-        for i, avg in enumerate(averages):
-            feedback_trend.labels(bin=i+1).observe(avg)
+    weekday = round(time.time()) % 7  # simulate a different weekday with each request
+    feedback_counts[weekday] += 1
+    feedback_per_day.labels(weekday=weekday).observe(feedback_counts[weekday])
 
     # Attach the ground truth to another list to compute the success rate.
     label = input_data.get('ground_truth')
