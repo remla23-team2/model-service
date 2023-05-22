@@ -37,7 +37,7 @@ model_accuracy = Gauge('model_accuracy', 'Accuracy of the predictions')
 feedback_per_day = Histogram(
     'feedback_per_day', 
     'Feedback count for each day of the week', 
-    buckets=[0, 1, 2, 3, 4, 5, 6, 7]
+    buckets=[0, 1, 2, 3, 4, 5, 6]
 )
 
 def split_and_average(l, chunk_size):
