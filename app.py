@@ -42,6 +42,10 @@ def split_and_average(l, chunk_size):
     averages = [sum(chunk)/len(chunk) for chunk in chunks]
     return averages
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return "Service is alive", 200
+
 @app.route('/metrics', methods=['GET'])
 def metrics():
 
