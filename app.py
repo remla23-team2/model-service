@@ -46,6 +46,10 @@ def split_and_average(l, chunk_size):
 def health_check():
     return "Service is alive", 200
 
+@app.route('/health-check', methods=['GET'])
+def health_check():
+    return "Service is alive", 200
+
 @app.route('/metrics', methods=['GET'])
 def metrics():
 
