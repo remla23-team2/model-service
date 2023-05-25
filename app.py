@@ -3,13 +3,14 @@ from flasgger import Swagger
 from flask_cors import CORS
 
 import prometheus_client
-from prometheus_client import Counter, Histogram, Summary
+from prometheus_client import Counter, Gauge, Histogram, Summary
 # from prometheus_flask_exporter import PrometheusMetrics
 
 import pickle
 import joblib
 
 import nltk
+import time
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 from src.preprocessing import process_review
@@ -29,8 +30,16 @@ count_predict = 0
 averages = []
 buffer_predict = []
 buffer_label = []
+feedback_counts = [0, 0, 0, 0, 0, 0, 0]
 
 predict_counter = Counter('predictions_counter', 'The total number of model predictions')
+model_accuracy = Gauge('model_accuracy', 'Accuracy of the predictions')
+feedback_per_day = Histogram(
+    'feedback_per_day', 
+    'Feedback count for each day of the week', 
+    buckets=[0, 1, 2, 3, 4, 5, 6]
+)
+feedback_summary = Summary('feedback_summary', 'Feedback summary')
 
 def split_and_average(l, chunk_size):
     """
@@ -52,9 +61,15 @@ def health_check():
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
+    num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
+    accuracy = round(num_correct/len(buffer_label), 2)
+    model_accuracy.set(accuracy)
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
+    registry.register(model_accuracy)
+    registry.register(feedback_per_day)
+    registry.register(feedback_summary)
 
     return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
 
@@ -81,7 +96,7 @@ def predict():
       200:
         description: "The result of the classification: 'spam' or 'ham'."
     """
-    global count_predict, averages, buffer_predict, buffer_label
+    global count_predict, averages, buffer_predict, buffer_label, feedback_counts
 
     count_predict += 1
     
@@ -96,7 +111,14 @@ def predict():
     if len(buffer_predict) >= 50:
         buffer_predict.pop(0)
     buffer_predict.append(result)
-    averages = split_and_average(list(reversed(buffer_predict)), 5)
+
+    weekday = round(time.time()) % 7  # simulate a different weekday with each request
+    feedback_counts[weekday] += 1
+    feedback_per_day.observe(weekday)
+
+    # Summary: if weekday is a weekend, then 1, else 0. Add it to the summary.
+    summary_value = 1 if weekday > 4 else 0
+    feedback_summary.observe(summary_value)
 
     # Attach the ground truth to another list to compute the success rate.
     label = input_data.get('ground_truth')
