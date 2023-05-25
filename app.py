@@ -57,15 +57,6 @@ def metrics():
     accuracy = round(num_correct/len(buffer_label), 2)
     model_accuracy.set(accuracy)
 
-    # summary
-    feedback_weekdays = sum(feedback_counts[:5])
-    feedback_weekend = sum(feedback_counts[5:])
-
-    summary_message = "business is booming on weekdays" if feedback_weekdays > feedback_weekend else "business is booming on weekends"
-    summary_value = 1 if summary_message == "business is booming on weekdays" else 0
-    feedback_summary.observe(summary_value)
-
-
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
     registry.register(model_accuracy)
@@ -116,6 +107,10 @@ def predict():
     weekday = round(time.time()) % 7  # simulate a different weekday with each request
     feedback_counts[weekday] += 1
     feedback_per_day.observe(weekday)
+
+    # Summary: if weekday is a weekend, then 1, else 0. Add it to the summary.
+    summary_value = 1 if weekday > 4 else 0
+    feedback_summary.observe(summary_value)
 
     # Attach the ground truth to another list to compute the success rate.
     label = input_data.get('ground_truth')
