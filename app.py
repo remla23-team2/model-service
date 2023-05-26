@@ -30,6 +30,7 @@ count_predict = 0
 averages = []
 buffer_predict = []
 buffer_label = []
+buffer_rating = []
 feedback_counts = [0, 0, 0, 0, 0, 0, 0]
 
 predict_counter = Counter('predictions_counter', 'The total number of model predictions')
@@ -40,6 +41,7 @@ feedback_per_day = Histogram(
     buckets=[0, 1, 2, 3, 4, 5, 6]
 )
 feedback_summary = Summary('feedback_summary', 'Feedback summary')
+average_rating = Gauge('average_rating', 'Average rating of the reviews', ['rating'])
 
 def split_and_average(l, chunk_size):
     """
@@ -64,12 +66,16 @@ def metrics():
     num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
     accuracy = round(num_correct/len(buffer_label), 2)
     model_accuracy.set(accuracy)
+    
+    average_rating_value = round(sum(buffer_rating)/len(buffer_rating), 2)
+    average_rating.set(average_rating_value, labels={'rating': 'hearts'})
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
     registry.register(model_accuracy)
     registry.register(feedback_per_day)
     registry.register(feedback_summary)
+    registry.register(average_rating)
 
     return Response(prometheus_client.generate_latest(registry), mimetype="text/plain")
 
@@ -106,6 +112,10 @@ def predict():
     review = input_data.get('review')
     processed_review = process_review(review)
     
+    # Add the rating to a list to compute the average rating.
+    rating = input_data.get('rating')
+    buffer_rating.append(rating)
+    
     X = cv.transform([processed_review]).toarray()
     result = int(classifier.predict(X)[0])
     if len(buffer_predict) >= 50:
@@ -115,7 +125,7 @@ def predict():
     weekday = round(time.time()) % 7  # simulate a different weekday with each request
     feedback_counts[weekday] += 1
     feedback_per_day.observe(weekday)
-
+    
     # Summary: if weekday is a weekend, then 1, else 0. Add it to the summary.
     summary_value = 1 if weekday > 4 else 0
     feedback_summary.observe(summary_value)
@@ -128,7 +138,8 @@ def predict():
 
     return jsonify({
         "result": result,
-        "review": processed_review
+        "review": processed_review,
+        "rating": rating
     })
    
 app.run(host="0.0.0.0", port=8080, debug=True)
