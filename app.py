@@ -56,11 +56,14 @@ def split_and_average(l, chunk_size):
 @app.route('/metrics', methods=['GET'])
 def metrics():
     num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
-    accuracy = round(num_correct/len(buffer_label), 2)
-    model_accuracy.set(accuracy)
+    accuracy = round(num_correct / len(buffer_label), 2) if len(buffer_label) > 0 else 0
     
-    average_rating_value = round(sum(buffer_rating)/len(buffer_rating), 2)
-    average_rating.set({}, average_rating_value)
+    print("buffer_rating:", buffer_rating)  # Add this line to check the list content
+    
+    average_rating_value = round(sum(buffer_rating) / len(buffer_rating), 2) if len(buffer_rating) > 0 else 0
+    
+    model_accuracy.set(accuracy)
+    average_rating.set(average_rating_value)
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
