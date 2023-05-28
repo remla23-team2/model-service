@@ -60,7 +60,7 @@ def metrics():
     model_accuracy.set(accuracy)
     
     average_rating_value = round(sum(buffer_rating)/len(buffer_rating), 2)
-    average_rating.set(average_rating_value, labels={'rating': 'hearts'})
+    average_rating.set(average_rating_value)
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
