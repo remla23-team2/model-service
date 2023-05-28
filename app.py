@@ -41,7 +41,7 @@ feedback_per_day = Histogram(
     buckets=[0, 1, 2, 3, 4, 5, 6]
 )
 feedback_summary = Summary('feedback_summary', 'Feedback summary')
-average_rating = Gauge('average_rating', 'Average rating of the reviews', ['rating'])
+average_rating = Gauge('average_rating', 'Average rating of the reviews')
 
 def split_and_average(l, chunk_size):
     """
@@ -60,7 +60,7 @@ def metrics():
     model_accuracy.set(accuracy)
     
     average_rating_value = round(sum(buffer_rating)/len(buffer_rating), 2)
-    average_rating.set(average_rating_value)
+    average_rating.set({}, average_rating_value)
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
