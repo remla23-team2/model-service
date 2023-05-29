@@ -30,7 +30,8 @@ count_predict = 0
 averages = []
 buffer_predict = []
 buffer_label = []
-buffer_rating = []
+buffer_rating_stars = []
+buffer_rating_hearts = []
 feedback_counts = [0, 0, 0, 0, 0, 0, 0]
 
 predict_counter = Counter('predictions_counter', 'The total number of model predictions')
@@ -56,11 +57,22 @@ def split_and_average(l, chunk_size):
 @app.route('/metrics', methods=['GET'])
 def metrics():
     num_correct = sum([int(x == y) for x, y in zip(buffer_predict, buffer_label)])
-    accuracy = round(num_correct/len(buffer_label), 2)
+    if len(buffer_label) == 0:
+        accuracy = 0
+    else:
+        accuracy = round(num_correct/len(buffer_label), 2)
     model_accuracy.set(accuracy)
     
-    average_rating_value = round(sum(buffer_rating)/len(buffer_rating), 2)
-    average_rating.labels(rating='stars').set(average_rating_value)
+    if len(buffer_rating_stars) == 0:
+        average_rating_value_stars = 0
+    else:
+        average_rating_value_stars = round(sum(buffer_rating_stars)/len(buffer_rating_stars), 2)
+    if len(buffer_rating_hearts) == 0:
+        average_rating_value_hearts = 0
+    else: 
+        average_rating_value_hearts = round(sum(buffer_rating_hearts)/len(buffer_rating_hearts), 2)
+    average_rating.labels(rating='stars').set(average_rating_value_stars)
+    average_rating.labels(rating='hearts').set(average_rating_value_hearts)
 
     registry = prometheus_client.CollectorRegistry()
     registry.register(predict_counter)
@@ -106,7 +118,11 @@ def predict():
     
     # Add the rating to a list to compute the average rating.
     rating = input_data.get('rating')
-    buffer_rating.append(rating)
+    rating_type = input_data.get('rating_type')
+    if rating_type == 'stars':
+        buffer_rating_stars.append(rating)
+    else:
+        buffer_rating_hearts.append(rating)
     
     X = cv.transform([processed_review]).toarray()
     result = int(classifier.predict(X)[0])
@@ -131,7 +147,8 @@ def predict():
     return jsonify({
         "result": result,
         "review": processed_review,
-        "rating": rating
+        "rating": rating,
+        "rating_type": rating_type
     })
    
 app.run(host="0.0.0.0", port=8080, debug=True)
