@@ -21,8 +21,8 @@ RUN cp -r /root/model-training/src /root/src && \
 
 # Copy the application code to the container
 COPY app.py .
-COPY data data
-COPY src src
+# COPY data data
+# COPY src src
 
 EXPOSE 8080
 
